@@ -49,7 +49,7 @@ class XiaoaiFollowerConfig(RobotConfig):
     cameras: dict[str, CameraConfig] = field(
         default_factory=lambda: {
             "main": OpenCVCameraConfig(
-                index_or_path="/dev/video10",
+                index_or_path="/dev/video4",
                 fps=30,
                 width=640,
                 height=480

@@ -98,6 +98,7 @@ from lerobot.robots import (  # noqa: F401
     make_robot_from_config,
     so100_follower,
     so101_follower,
+    xiaoai,
 )
 from lerobot.teleoperators import (  # noqa: F401
     Teleoperator,
@@ -108,6 +109,7 @@ from lerobot.teleoperators import (  # noqa: F401
     make_teleoperator_from_config,
     so100_leader,
     so101_leader,
+    xiaoai_leader,
 )
 from lerobot.teleoperators.keyboard.teleop_keyboard import KeyboardTeleop
 from lerobot.utils.constants import ACTION, OBS_STR
@@ -445,10 +447,10 @@ def record(cfg: RecordConfig) -> LeRobotDataset:
 
     listener, events = init_keyboard_listener()
 
-    with VideoEncodingManager(dataset):
-        recorded_episodes = 0
-        while recorded_episodes < cfg.dataset.num_episodes and not events["stop_recording"]:
-            log_say(f"Recording episode {dataset.num_episodes}", cfg.play_sounds)
+    recorded_episodes = 0
+    while recorded_episodes < cfg.dataset.num_episodes and not events["stop_recording"]:
+        log_say(f"Recording episode {dataset.num_episodes}", cfg.play_sounds)
+        with VideoEncodingManager(dataset):
             record_loop(
                 robot=robot,
                 events=events,
@@ -466,34 +468,34 @@ def record(cfg: RecordConfig) -> LeRobotDataset:
                 display_data=cfg.display_data,
             )
 
-            # Execute a few seconds without recording to give time to manually reset the environment
-            # Skip reset for the last episode to be recorded
-            if not events["stop_recording"] and (
-                (recorded_episodes < cfg.dataset.num_episodes - 1) or events["rerecord_episode"]
-            ):
-                log_say("Reset the environment", cfg.play_sounds)
-                record_loop(
-                    robot=robot,
-                    events=events,
-                    fps=cfg.dataset.fps,
-                    teleop_action_processor=teleop_action_processor,
-                    robot_action_processor=robot_action_processor,
-                    robot_observation_processor=robot_observation_processor,
-                    teleop=teleop,
-                    control_time_s=cfg.dataset.reset_time_s,
-                    single_task=cfg.dataset.single_task,
-                    display_data=cfg.display_data,
-                )
+        # Execute a few seconds without recording to give time to manually reset the environment
+        # Skip reset for the last episode to be recorded
+        if not events["stop_recording"] and (
+            (recorded_episodes < cfg.dataset.num_episodes - 1) or events["rerecord_episode"]
+        ):
+            log_say("Reset the environment", cfg.play_sounds)
+            record_loop(
+                robot=robot,
+                events=events,
+                fps=cfg.dataset.fps,
+                teleop_action_processor=teleop_action_processor,
+                robot_action_processor=robot_action_processor,
+                robot_observation_processor=robot_observation_processor,
+                teleop=teleop,
+                control_time_s=cfg.dataset.reset_time_s,
+                single_task=cfg.dataset.single_task,
+                display_data=cfg.display_data,
+            )
 
-            if events["rerecord_episode"]:
-                log_say("Re-record episode", cfg.play_sounds)
-                events["rerecord_episode"] = False
-                events["exit_early"] = False
-                dataset.clear_episode_buffer()
-                continue
+        if events["rerecord_episode"]:
+            log_say("Re-record episode", cfg.play_sounds)
+            events["rerecord_episode"] = False
+            events["exit_early"] = False
+            dataset.clear_episode_buffer()
+            continue
 
-            dataset.save_episode()
-            recorded_episodes += 1
+        dataset.save_episode()
+        recorded_episodes += 1
 
     log_say("Stop recording", cfg.play_sounds, blocking=True)
 
